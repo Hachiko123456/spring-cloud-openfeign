@@ -19,6 +19,7 @@ package org.springframework.cloud.openfeign;
 import org.springframework.cloud.context.named.NamedContextFactory;
 
 /**
+ * {@link FeignClient}标记的接口对应的IOC容器
  * A factory that creates instances of feign classes. It creates a Spring
  * ApplicationContext per client name, and extracts the beans that it needs from there.
  *

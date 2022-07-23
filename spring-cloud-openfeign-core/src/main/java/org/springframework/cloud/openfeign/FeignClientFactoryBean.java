@@ -82,6 +82,7 @@ class FeignClientFactoryBean
 		Assert.hasText(this.name, "Name must be set");
 	}
 
+	// 配置Feign的日志、编码、解码器
 	protected Feign.Builder feign(FeignContext context) {
 		FeignLoggerFactory loggerFactory = get(context, FeignLoggerFactory.class);
 		Logger logger = loggerFactory.create(this.type);
@@ -90,11 +91,14 @@ class FeignClientFactoryBean
 		Feign.Builder builder = get(context, Feign.Builder.class)
 				// required values
 				.logger(logger)
+				// 编码器
 				.encoder(get(context, Encoder.class))
+				// 解码器
 				.decoder(get(context, Decoder.class))
+				// 注解解析器
 				.contract(get(context, Contract.class));
 		// @formatter:on
-
+		// 根据配置文件中的feign.client.*的配置来配置Feign
 		configureFeign(context, builder);
 
 		return builder;
@@ -104,6 +108,7 @@ class FeignClientFactoryBean
 		FeignClientProperties properties = this.applicationContext
 				.getBean(FeignClientProperties.class);
 		if (properties != null) {
+			// 如果feign.client.default-to-properties=true，则配置文件优先级最高
 			if (properties.isDefaultToProperties()) {
 				configureUsingConfiguration(context, builder);
 				configureUsingProperties(
@@ -113,6 +118,7 @@ class FeignClientFactoryBean
 						builder);
 			}
 			else {
+				// 否则代码bean的优先级最高
 				configureUsingProperties(
 						properties.getConfig().get(properties.getDefaultConfig()),
 						builder);
@@ -230,12 +236,19 @@ class FeignClientFactoryBean
 		return instance;
 	}
 
+	/**
+	 * 从Feign对应的Spring容器中获取类型为type的bean
+	 * @param context
+	 * @param type
+	 * @return T
+	 **/
 	protected <T> T getOptional(FeignContext context, Class<T> type) {
 		return context.getInstance(this.contextId, type);
 	}
 
 	protected <T> T loadBalance(Feign.Builder builder, FeignContext context,
 			HardCodedTarget<T> target) {
+		//
 		Client client = getOptional(context, Client.class);
 		if (client != null) {
 			builder.client(client);
@@ -253,14 +266,17 @@ class FeignClientFactoryBean
 	}
 
 	/**
+	 * 创建一个FeignClient接口的代理对象，T就是@FeignClient注解的接口类型
 	 * @param <T> the target type of the Feign client
 	 * @return a {@link Feign} client created with the specified data and the context
 	 * information
 	 */
 	<T> T getTarget() {
 		FeignContext context = this.applicationContext.getBean(FeignContext.class);
+		// 配置Feign的日志、编码、解码器
 		Feign.Builder builder = feign(context);
 
+		// 没有直接配url，走负载均衡请求
 		if (!StringUtils.hasText(this.url)) {
 			if (!this.name.startsWith("http")) {
 				this.url = "http://" + this.name;
@@ -272,25 +288,30 @@ class FeignClientFactoryBean
 			return (T) loadBalance(builder, context,
 					new HardCodedTarget<>(this.type, this.name, this.url));
 		}
+		// 如果配置了url，则直接请求url地址
 		if (StringUtils.hasText(this.url) && !this.url.startsWith("http")) {
 			this.url = "http://" + this.url;
 		}
 		String url = this.url + cleanPath();
+		// feign 发起http请求的核心组件
 		Client client = getOptional(context, Client.class);
 		if (client != null) {
 			if (client instanceof LoadBalancerFeignClient) {
 				// not load balancing because we have a url,
 				// but ribbon is on the classpath, so unwrap
+				// 因为配置了url，所以不用具有负载均衡能力的Client，返回Client.Default
 				client = ((LoadBalancerFeignClient) client).getDelegate();
 			}
 			if (client instanceof FeignBlockingLoadBalancerClient) {
 				// not load balancing because we have a url,
 				// but Spring Cloud LoadBalancer is on the classpath, so unwrap
+				// 因为配置了url，所以不用具有负载均衡能力的Client，返回Client.Default
 				client = ((FeignBlockingLoadBalancerClient) client).getDelegate();
 			}
 			builder.client(client);
 		}
 		Targeter targeter = get(context, Targeter.class);
+		// Targeter创建动态代理对象
 		return (T) targeter.target(this, builder, context,
 				new HardCodedTarget<>(this.type, this.name, url));
 	}

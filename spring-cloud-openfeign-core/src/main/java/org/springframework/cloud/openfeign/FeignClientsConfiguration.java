@@ -148,6 +148,7 @@ public class FeignClientsConfiguration {
 	@ConditionalOnClass({ HystrixCommand.class, HystrixFeign.class })
 	protected static class HystrixFeignConfiguration {
 
+		// 引入hystrix且feign.hystrix.enable=true
 		@Bean
 		@Scope("prototype")
 		@ConditionalOnMissingBean

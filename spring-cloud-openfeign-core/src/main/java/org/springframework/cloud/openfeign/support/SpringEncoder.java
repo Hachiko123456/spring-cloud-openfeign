@@ -55,8 +55,10 @@ public class SpringEncoder implements Encoder {
 
 	private static final Log log = LogFactory.getLog(SpringEncoder.class);
 
+	// SpringFormEncoder处理MultipartFile相关参数
 	private final SpringFormEncoder springFormEncoder = new SpringFormEncoder();
 
+	// Spring MVC 所持有的HTTP 消息转换器
 	private ObjectFactory<HttpMessageConverters> messageConverters;
 
 	public SpringEncoder(ObjectFactory<HttpMessageConverters> messageConverters) {
@@ -78,6 +80,7 @@ public class SpringEncoder implements Encoder {
 				requestContentType = MediaType.valueOf(type);
 			}
 
+			// 如果消息是MultipartFile类型，则交给SpringFormEncoder处理
 			if (bodyType != null && bodyType.equals(MultipartFile.class)) {
 				if (Objects.equals(requestContentType, MediaType.MULTIPART_FORM_DATA)) {
 					this.springFormEncoder.encode(requestBody, bodyType, request);
@@ -91,6 +94,7 @@ public class SpringEncoder implements Encoder {
 				}
 			}
 
+			// 否则就遍历HTTP消息转换器去尝试把消息转换成对应的类型
 			for (HttpMessageConverter<?> messageConverter : this.messageConverters
 					.getObject().getConverters()) {
 				if (messageConverter.canWrite(requestType, requestContentType)) {
@@ -109,6 +113,7 @@ public class SpringEncoder implements Encoder {
 
 					FeignOutputMessage outputMessage = new FeignOutputMessage(request);
 					try {
+						// 转换消息
 						@SuppressWarnings("unchecked")
 						HttpMessageConverter<Object> copy = (HttpMessageConverter<Object>) messageConverter;
 						copy.write(requestBody, requestContentType, outputMessage);
@@ -120,10 +125,12 @@ public class SpringEncoder implements Encoder {
 					request.headers(null);
 					// converters can modify headers, so update the request
 					// with the modified headers
+					// 设置头
 					request.headers(getHeaders(outputMessage.getHeaders()));
 
 					// do not use charset for binary data and protobuf
 					Charset charset;
+					// 设置编码，默认为UTF-8
 					if (messageConverter instanceof ByteArrayHttpMessageConverter) {
 						charset = null;
 					}
@@ -135,6 +142,7 @@ public class SpringEncoder implements Encoder {
 					else {
 						charset = StandardCharsets.UTF_8;
 					}
+					// 把转换后的消息塞到Request.Body中
 					request.body(Request.Body.encoded(
 							outputMessage.getOutputStream().toByteArray(), charset));
 					return;

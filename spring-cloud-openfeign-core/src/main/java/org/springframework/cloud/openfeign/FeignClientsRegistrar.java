@@ -205,6 +205,7 @@ class FeignClientsRegistrar
 					// verify annotated class is an interface
 					AnnotatedBeanDefinition beanDefinition = (AnnotatedBeanDefinition) candidateComponent;
 					AnnotationMetadata annotationMetadata = beanDefinition.getMetadata();
+					// @FeignClient注解修饰对象必须为接口
 					Assert.isTrue(annotationMetadata.isInterface(),
 							"@FeignClient can only be specified on an interface");
 
@@ -213,9 +214,11 @@ class FeignClientsRegistrar
 									FeignClient.class.getCanonicalName());
 
 					String name = getClientName(attributes);
+					// 把@FeignClient的configuration注册到IOC容器中
 					registerClientConfiguration(registry, name,
 							attributes.get("configuration"));
 
+					// 把@FeignClient修饰的对象以FeignClientFactoryBean的形式注册到IOC容器中
 					registerFeignClient(registry, annotationMetadata, attributes);
 				}
 			}
