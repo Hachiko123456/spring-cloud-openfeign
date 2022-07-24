@@ -31,15 +31,13 @@ import feign.MethodMetadata;
 public interface AnnotatedParameterProcessor {
 
 	/**
-	 * 处理器能处理的注解
-	 * Retrieves the processor supported annotation type.
+	 * 处理器能处理的注解 Retrieves the processor supported annotation type.
 	 * @return the annotation type
 	 */
 	Class<? extends Annotation> getAnnotationType();
 
 	/**
-	 * 解析对应的注解
-	 * Process the annotated parameter.
+	 * 解析对应的注解 Process the annotated parameter.
 	 * @param context the parameter context
 	 * @param annotation the annotation instance
 	 * @param method the method that contains the annotation
